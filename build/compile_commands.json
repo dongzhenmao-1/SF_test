@@ -1,8 +1,0 @@
-[
-{
-  "directory": "E:/SF_test/build",
-  "command": "E:\\mingw64\\bin\\g++.exe  @CMakeFiles/test.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\test.dir\\main.cpp.obj -c E:\\SF_test\\main.cpp",
-  "file": "E:/SF_test/main.cpp",
-  "output": "CMakeFiles/test.dir/main.cpp.obj"
-}
-]
