@@ -4,6 +4,8 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
+#include <zmq.hpp>
+
 #include "snake.hpp"
 
 sf::RenderWindow window(sf::VideoMode({640, 360}), "My window", sf::Style::Default);
@@ -53,18 +55,12 @@ int main() {
             const std::optional event = window.pollEvent();
             if (event == std::nullopt) continue; 
             if (event->is<sf::Event::Closed>()) window.close();
-            else if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
-                     if (key->scancode == sf::Keyboard::Scancode::Right) snake->change_dir(0);
-                else if (key->scancode == sf::Keyboard::Scancode::Left) snake->change_dir(1);
-                else if (key->scancode == sf::Keyboard::Scancode::Down) snake->change_dir(2);
-                else if (key->scancode == sf::Keyboard::Scancode::Up) snake->change_dir(3);
-            }
         }
         
         game.t_run();
 
         pre_draw();
-        if (snake->v.size()) printf("(%d, %d)\n", snake->v.at(0).x, snake->v.at(0).y);
+        // if (snake->v.size()) printf("(%d, %d)\n", snake->v.at(0).x, snake->v.at(0).y);
 
         window.display();
     }

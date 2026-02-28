@@ -2,6 +2,8 @@
 
 #include <random>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 namespace mtd {
 
@@ -56,6 +58,26 @@ int rand_bool(double k = 0.5) {
 template <typename tnt>
 void shuffle(tnt a, tnt b) {
     std::shuffle(a, b, gen);
+}
+
+std::vector<std::string> split_string(std::string s) { // 时间复杂度为 O(n), erase 的底层实现为 popback
+    std::vector<std::string> v;
+    s = ' ' + s;
+    for (int p = int(s.size()) - 1; p >= 0; --p) {
+        if (s[p] == ' ') {
+            if (p != int(s.size()) - 1) v.push_back(s.substr(p + 1, int(s.size()) - p - 1));
+            s.erase(s.begin() + p, s.end());
+        }
+    }
+    std::reverse(v.begin(), v.end());
+    return v;
+}
+
+int string_to_int(std::string s) {
+    int v = 0, f = (s[0] == '-');
+    if (s[0] == '-') s.erase(s.begin());
+    for (char c : s) v = v * 10 + c - '0';
+    return v;
 }
 
 }
