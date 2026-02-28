@@ -15,28 +15,26 @@ void init() {
     window.setView(view);
 }
 
-SNAKE::Game<32, 18> game;
+SNAKE::Game game;
 SNAKE::Snake *snake;
 
 void pre_draw() {
     window.clear(sf::Color::Black);
     for (int x = -32; x < 32; ++x) {
         for (int y = -18; y < 18; ++y) {
-            int state = game.world[my_std::Point(x, y)];
+            int state = game.world[mtd::Point(x, y)];
             sf::RectangleShape rectangle({10, 10});
-            rectangle.setPosition({x * 10, y * 10});
+            rectangle.setPosition({x * 10.0, y * 10.0});
             if (state == -1) { // 空地
                 rectangle.setFillColor(sf::Color::Black); 
-            } else {
+            } else if (state >= 0) {
                 if ((state >> 1) == 0) {
                     rectangle.setFillColor(sf::Color::White);
-                    if (state & 1) {
-                        rectangle.setSize({8, 8});
-                        rectangle.setOutlineColor(sf::Color::Red);
-                        rectangle.setOutlineThickness(1.f);
-                        rectangle.setPosition({x * 10 + 1, y * 10 + 1});
-                    }
                 }
+            } else if (state == -2) {
+                rectangle.setFillColor(sf::Color::Blue);
+            } else {
+                rectangle.setFillColor(sf::Color::Yellow);
             }
             
             window.draw(rectangle);
@@ -51,7 +49,7 @@ int main() {
     game.t_run();
     
     while (window.isOpen()) {
-        for (sf::Clock c; c.getElapsedTime() < sf::seconds(0.15); ) {
+        for (sf::Clock c; c.getElapsedTime() < sf::seconds(0.2); ) {
             const std::optional event = window.pollEvent();
             if (event == std::nullopt) continue; 
             if (event->is<sf::Event::Closed>()) window.close();
@@ -66,6 +64,7 @@ int main() {
         game.t_run();
 
         pre_draw();
+        if (snake->v.size()) printf("(%d, %d)\n", snake->v.at(0).x, snake->v.at(0).y);
 
         window.display();
     }
