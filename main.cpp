@@ -17,8 +17,8 @@ void init() {
     window.setView(view);
 }
 
-SNAKE::Game game;
-SNAKE::Snake *snake;
+Game::Game game;
+Game::Snake *snake;
 
 void pre_draw() {
     window.clear(sf::Color::Black);
@@ -26,7 +26,7 @@ void pre_draw() {
         for (int y = -18; y < 18; ++y) {
             int state = game.world[mtd::Point(x, y)];
             sf::RectangleShape rectangle({10, 10});
-            rectangle.setPosition({x * 10.0, y * 10.0});
+            rectangle.setPosition({static_cast<floot>(x) * 10, static_cast<floot>(y) * 10});
             if (state == -1) { // 空地
                 rectangle.setFillColor(sf::Color::Black); 
             } else if (state >= 0) {

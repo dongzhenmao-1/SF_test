@@ -1,2 +1,3 @@
 *.exe
 build/
+cmake-build-debug-my_mingw/

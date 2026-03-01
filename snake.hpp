@@ -8,7 +8,7 @@
 
 #include "my_algorithm/my_algorithm.hpp"
 
-namespace SNAKE {
+namespace Game {
 
 enum class DIR {
     None = -1,
@@ -18,7 +18,7 @@ enum class DIR {
     Up = 3,   
 };
 
-DIR string_to_DIR(std::string s) {
+inline DIR string_to_DIR(const std::string& s) {
     if (s == "Right") return DIR::Right;
     else if (s == "Left") return DIR::Left;
     else if (s == "Down") return DIR::Down;
@@ -26,7 +26,7 @@ DIR string_to_DIR(std::string s) {
     else return DIR::None;
 }
 
-mtd::Point point_dir[4] = {
+inline mtd::Point point_dir[4] = {
     mtd::Point(1, 0),
     mtd::Point(-1, 0),
     mtd::Point(0, -1),
@@ -35,22 +35,25 @@ mtd::Point point_dir[4] = {
 
 struct Snake {
     std::vector<mtd::Point> v;
-    DIR dir, __dir;
+    DIR dir, next_dir;
     int id;
     int I; // 待添加长度
     int D; // 待减小长度
 
 
-    Snake(int _x, int _y) : v({mtd::Point(_x, _y)}), I(2), D(0), dir(DIR(0)) { }
+    Snake(const int _x, const int _y, const int _id) : v({mtd::Point(_x, _y)}), dir(static_cast<DIR>(0)),
+        next_dir(static_cast<DIR>(-1)), id(_id), I(2), D(0) {
 
-    mtd::Point head_next_pos() { return v[0] + point_dir[int(dir)]; }
+    }
+
+    mtd::Point head_next_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
 
     bool t_run();
-    void change_dir(DIR _dir) { __dir = _dir; }
+    void change_dir(const DIR _dir) { next_dir = _dir; }
     void ex_change_dir() {
-        if (int(__dir) == -1) return;
+        if (static_cast<int>(next_dir) == -1) return;
         // if ((int(__dir) ^ 1) == int(dir)) return;
-        dir = __dir, __dir = DIR::None;
+        dir = next_dir, next_dir = DIR::None;
     }
 
     void eat() { ++I; } // 我吃饭
@@ -58,10 +61,10 @@ struct Snake {
 
 };
 
-bool Snake::t_run() {
+inline bool Snake::t_run() {
     mtd::Point pre = v[0];
     v[0] = head_next_pos();
-    for (int i = 1; i < int(v.size()); ++i) {
+    for (int i = 1; i < v.size(); ++i) {
         std::swap(v[i], pre);
     }
     if (I > 0) --I, v.push_back(pre);
@@ -69,10 +72,9 @@ bool Snake::t_run() {
     return !v.empty();
 }
 
-// template <int w_r = 32, int h_r = 18>
-static const int w_r = 32, h_r = 18;
+template <int w_r = 32, int h_r = 18>
 struct Game {
-    static const int food_num = 5;
+    static constexpr int food_num = 5;
 
     std::vector<Snake> snake;
     std::vector<mtd::Point> food;
@@ -95,7 +97,8 @@ struct Game {
     void t_run();
 
     Snake &join_a_snake() {
-        snake.push_back(Snake(0, 0));
+
+        snake.emplace_back(0, 0, static_cast<int>(snake.size()));
         return snake.back();
     }
 
@@ -105,7 +108,8 @@ struct Game {
 
 };
 
-void Game::draw() {
+template <int w_r, int h_r>
+void Game<w_r, h_r>::draw() {
     for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, -h_r)] = -3;
     for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, h_r - 1)] = -3;
     for (int y = -h_r; y < h_r; ++y) world[mtd::Point(-w_r, y)] = -3;
@@ -129,8 +133,9 @@ void Game::draw() {
     } 
 }
 
-void Game::t_run() {
-    for (int id = 0; id < int(snake.size()); ++id) {
+template <int w_r, int h_r>
+void Game<w_r, h_r>::t_run() {
+    for (int id = 0; id < snake.size(); ++id) {
         snake[id].ex_change_dir();
     }        
 
@@ -151,7 +156,7 @@ void Game::t_run() {
         }
     }
 
-    for (int id = 0; id < int(snake.size()); ++id) {
+    for (int id = 0; id < snake.size(); ++id) {
         snake[id].t_run();
     }
 
@@ -170,14 +175,17 @@ void Game::t_run() {
     }
 
     get_rd_avl();
-    for ( ; food.size() < food_num; ) {
+    while (food.size() < food_num && !rd_avl.empty()) {
         food.push_back(rd_avl.back()), rd_avl.pop_back();
     }
 
     draw();
 }
 
-Game::Game() : context(1), receiver(context, zmq::socket_type::pull), publisher(context, zmq::socket_type::pub) {
+
+
+template <int w_r, int h_r>
+Game<w_r, h_r>::Game() : context(1), receiver(context, zmq::socket_type::pull), publisher(context, zmq::socket_type::pub) {
     receiver.bind("tcp://127.0.0.1:5555");
     publisher.bind("tcp://127.0.0.1:5556");
 
@@ -186,21 +194,14 @@ Game::Game() : context(1), receiver(context, zmq::socket_type::pull), publisher(
     join_a_snake();
 }
 
-void Game::run_server() {
-    const sf::Time tick(sf::seconds(0.2));
+template <int w_r, int h_r>
+void Game<w_r, h_r>::run_server() {
+    constexpr sf::Time tick(sf::seconds(0.2));
     while (true) {
         sf::Clock c;
         zmq::message_t msg;
         while (receiver.recv(msg, zmq::recv_flags::dontwait)) {
-            std::vector<std::string> cmd = mtd::split_string(msg.to_string());
-            if (cmd[0] == "snake") {
-                int id = mtd::string_to_int(cmd[1]);
-                if (cmd[2] == "change") {
-                    if (cmd[3] == "dir") {
-                        snake[id].change_dir(string_to_DIR(cmd[4]));
-                    }
-                }
-            }
+
         }
 
         t_run();
