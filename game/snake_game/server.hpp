@@ -126,7 +126,10 @@ namespace Game::Snake_game {
         draw();
     }
 
-
+    struct message_to_server {
+        int id;
+        DIR dir;
+    };
 
     template <int w_r, int h_r>
     Game<w_r, h_r>::Game() : context(1),
@@ -137,9 +140,9 @@ namespace Game::Snake_game {
 
         printf("Game is running on 5555 and 5556\n");
 
-        for (int i = 0; i < snake.size(); ++i) {
+        for (Snake &s : snake) {
             std::vector<mtd::Point> rd_avl = get_rd_avl();
-            snake[i] = Snake(rd_avl.back(), i);
+            s = Snake(rd_avl.back());
         }
     }
 
@@ -148,9 +151,10 @@ namespace Game::Snake_game {
         constexpr sf::Time tick(sf::seconds(0.2));
         while (true) {
             sf::Clock c;
-            zmq::message_t msg;
-            while (receiver.recv(msg, zmq::recv_flags::dontwait)) {
-
+            zmq::message_t _msg;
+            while (receiver.recv(_msg, zmq::recv_flags::dontwait)) {
+                message_to_server msg = *static_cast<message_to_server*>(_msg.data());
+                snake[msg.id].change_dir(msg.dir);
             }
 
             t_run();

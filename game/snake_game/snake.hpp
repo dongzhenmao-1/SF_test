@@ -29,23 +29,21 @@ namespace Game::Snake_game {
     struct Snake {
         std::vector<mtd::Point> v;
         DIR dir, next_dir;
-        int id;
         int I; // Length to be added
         int D; // Length to be reduced
         int is_alive;
 
-        Snake(const mtd::Point p, const int _id) : v({p}), dir(static_cast<DIR>(0)),
-            next_dir(static_cast<DIR>(-1)), id(_id), I(2), D(0), is_alive(true) {
+        Snake(const mtd::Point p) : v({p}), dir(static_cast<DIR>(0)),
+            next_dir(static_cast<DIR>(-1)), I(2), D(0), is_alive(true) {
         }
         Snake() : is_alive(false) {}
 
         mtd::Point next_head_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
 
         bool t_run();
-        void change_dir(const DIR _dir) { next_dir = _dir; }
+        void change_dir(const DIR _dir) { next_dir = _dir; } // External Interface
         void _change_dir() {
-            if (static_cast<int>(next_dir) == -1) return;
-            // if ((int(__dir) ^ 1) == int(dir)) return;
+            if (next_dir == DIR::None) return;
             dir = next_dir, next_dir = DIR::None;
         }
 

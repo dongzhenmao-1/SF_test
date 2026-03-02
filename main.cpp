@@ -3,7 +3,7 @@
 
 #include <zmq.hpp>
 
-#include "game/snake_game/game.hpp"
+#include "game/snake_game/server.hpp"
 
 sf::RenderWindow window(sf::VideoMode({640, 360}), "My window", sf::Style::Default);
 
