@@ -9,15 +9,27 @@
 
 #include "../../my_algorithm/my_algorithm.hpp"
 #include "snake.hpp"
+#include "food.hpp"
 
-namespace Game {
+namespace Game::Snake_game {
 
     template <int w_r = 32, int h_r = 18>
     struct Game {
-        static constexpr int food_num = 5;
+        static constexpr sf::Color wall_color = sf::Color::White;
+        static constexpr sf::Color none_color = sf::Color::Black;
+        static constexpr sf::Color food_color = sf::Color::Red;
+        static constexpr std::array snake_colors_range = {
+            sf::Color::Cyan,
+            sf::Color::Blue,
+            sf::Color::Green,
+            sf::Color::Yellow,
+        };
 
-        std::vector<Snake> snake;
-        std::vector<mtd::Point> food;
+        static constexpr int food_num = 5;
+        static constexpr int snake_num = 1;
+
+        std::array<Snake, snake_num> snake;
+        std::array<Food, food_num> food;
 
         zmq::context_t context;
         zmq::socket_t receiver;
@@ -25,21 +37,13 @@ namespace Game {
 
         std::vector<mtd::Point> get_rd_avl();
 
-        mtd::Ex_array_2D<int, w_r, h_r> world; // -1 代表空
+        mtd::Ex_array_2D<sf::Color, w_r, h_r> world;
 
         void draw();
-
         void t_run();
-
-        Snake &join_a_snake() {
-
-            snake.emplace_back(0, 0, static_cast<int>(snake.size()));
-            return snake.back();
-        }
+        void run_server();
 
         Game();
-
-        void run_server();
 
     };
 
@@ -57,8 +61,8 @@ namespace Game {
         for (Snake &s : snake) {
             for (mtd::Point p : s.v) avl.erase(p);
         }
-        for (const mtd::Point p : food) {
-            avl.erase(p);
+        for (const Food f : food) {
+            avl.erase(f.pos);
         }
 
         for (const mtd::Point p : avl) rd_avl.push_back(p);
@@ -69,59 +73,54 @@ namespace Game {
 
     template <int w_r, int h_r>
     void Game<w_r, h_r>::draw() {
-        for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, -h_r)] = -3;
-        for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, h_r - 1)] = -3;
-        for (int y = -h_r; y < h_r; ++y) world[mtd::Point(-w_r, y)] = -3;
-        for (int y = -h_r; y < h_r; ++y) world[mtd::Point(w_r - 1, y)] = -3;
+        for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, -h_r)] = wall_color;
+        for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, h_r - 1)] = wall_color;
+        for (int y = -h_r; y < h_r; ++y) world[mtd::Point(-w_r, y)] = wall_color;
+        for (int y = -h_r; y < h_r; ++y) world[mtd::Point(w_r - 1, y)] = wall_color;
 
         for (int x = -w_r + 1; x < w_r - 1; ++x) {
             for (int y = -h_r + 1; y < h_r - 1; ++y) {
-                world[mtd::Point(x, y)] = -1;
+                world[mtd::Point(x, y)] = none_color;
             }
         }
 
-        for (mtd::Point p : food) {
-            world[p] = -2;
+        for (Food f : food) if (f.is_alive) {
+            world[f.pos] = food_color;
         }
 
-        for (int id = 0; id < snake.size(); ++id) {
-            for (mtd::Point p : snake[id].v) {
-                world[p] = id * 2;
+        for (Snake &s : snake) {
+            if (!s.is_alive) continue;
+            for (const mtd::Point p : s.v) {
+                world[p] = snake_colors_range[0];
             }
-            world[snake[id].v[0]] = id * 2 + 1;
         }
     }
 
     template <int w_r, int h_r>
     void Game<w_r, h_r>::t_run() {
-        for (int id = 0; id < snake.size(); ++id) {
-            snake[id].ex_change_dir();
-        }
+        for (Snake &s : snake) s._change_dir();
 
-        for (int ida = 0; ida < snake.size(); ++ida) { // 处理碰撞逻辑
-            mtd::Point head = snake[ida].head_next_pos();
-            for (int idb = 0; idb < snake.size(); ++idb) {
-                for (mtd::Point p : snake[idb].v) { // 撞到对方身体了
-                    if (head == p) snake[ida].hit();
+        for (Snake &sa : snake) {
+            mtd::Point head = sa.next_head_pos();
+            for (Snake &sb : snake) {
+                for (mtd::Point p : sb.v) {
+                    if (head == p) sa.hit();
                 }
             }
             if (head.x <= -w_r || head.x >= w_r - 1 || head.y <= -h_r || head.y >= h_r - 1) {
-                snake[ida].hit();
+                sa.hit();
             }
-            for (int idb = 0; idb < food.size(); ++idb) {
-                if (head == food[idb] && snake[ida].D == 0) { //
-                    snake[ida].eat(), food.erase(food.begin() + idb), --idb;
-                }
+            for (Food &f : food) if (f.is_alive && head == f.pos) {
+                sa.eat(f);
             }
         }
 
-        for (int id = 0; id < snake.size(); ++id) {
-            snake[id].t_run();
-        }
+        for (Snake &s : snake) s.t_run();
 
-        auto rd_avl = get_rd_avl();
-        while (food.size() < food_num && !rd_avl.empty()) {
-            food.push_back(rd_avl.back()), rd_avl.pop_back();
+        std::vector<mtd::Point> rd_avl = get_rd_avl();
+        for (Food &f : food) if (!f.is_alive){
+            f = Food(rd_avl.back(), 1);
+            rd_avl.pop_back();
         }
 
         draw();
@@ -130,13 +129,18 @@ namespace Game {
 
 
     template <int w_r, int h_r>
-    Game<w_r, h_r>::Game() : context(1), receiver(context, zmq::socket_type::pull), publisher(context, zmq::socket_type::pub) {
+    Game<w_r, h_r>::Game() : context(1),
+                             receiver(context, zmq::socket_type::pull),
+                             publisher(context, zmq::socket_type::pub) {
         receiver.bind("tcp://127.0.0.1:5555");
         publisher.bind("tcp://127.0.0.1:5556");
 
         printf("Game is running on 5555 and 5556\n");
 
-        join_a_snake();
+        for (int i = 0; i < snake.size(); ++i) {
+            std::vector<mtd::Point> rd_avl = get_rd_avl();
+            snake[i] = Snake(rd_avl.back(), i);
+        }
     }
 
     template <int w_r, int h_r>

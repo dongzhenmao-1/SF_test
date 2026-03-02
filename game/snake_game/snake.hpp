@@ -7,8 +7,9 @@
 #include <zmq.hpp>
 
 #include "../../my_algorithm/my_algorithm.hpp"
+#include "food.hpp"
 
-namespace Game {
+namespace Game::Snake_game {
 
     enum class DIR {
         None = -1,
@@ -17,14 +18,6 @@ namespace Game {
         Down = 2,
         Up = 3,
     };
-
-    inline DIR string_to_DIR(const std::string& s) {
-        if (s == "Right") return DIR::Right;
-        else if (s == "Left") return DIR::Left;
-        else if (s == "Down") return DIR::Down;
-        else if (s == "Up") return DIR::Up;
-        else return DIR::None;
-    }
 
     inline mtd::Point point_dir[4] = {
         mtd::Point(1, 0),
@@ -37,33 +30,35 @@ namespace Game {
         std::vector<mtd::Point> v;
         DIR dir, next_dir;
         int id;
-        int I; // 待添加长度
-        int D; // 待减小长度
+        int I; // Length to be added
+        int D; // Length to be reduced
+        int is_alive;
 
-
-        Snake(const int _x, const int _y, const int _id) : v({mtd::Point(_x, _y)}), dir(static_cast<DIR>(0)),
-            next_dir(static_cast<DIR>(-1)), id(_id), I(2), D(0) {
-
+        Snake(const mtd::Point p, const int _id) : v({p}), dir(static_cast<DIR>(0)),
+            next_dir(static_cast<DIR>(-1)), id(_id), I(2), D(0), is_alive(true) {
         }
+        Snake() : is_alive(false) {}
 
-        mtd::Point head_next_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
+        mtd::Point next_head_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
 
         bool t_run();
         void change_dir(const DIR _dir) { next_dir = _dir; }
-        void ex_change_dir() {
+        void _change_dir() {
             if (static_cast<int>(next_dir) == -1) return;
             // if ((int(__dir) ^ 1) == int(dir)) return;
             dir = next_dir, next_dir = DIR::None;
         }
 
-        void eat() { ++I; } // 我吃饭
-        void hit() { ++D; } // 撞到墙了
+        void eat(Food &food) { // eat;
+            I += food.I, food.is_alive = false;
+        }
+        void hit() { ++D; } // hit
 
     };
 
     inline bool Snake::t_run() {
         mtd::Point pre = v[0];
-        v[0] = head_next_pos();
+        v[0] = next_head_pos();
         for (int i = 1; i < v.size(); ++i) {
             std::swap(v[i], pre);
         }
