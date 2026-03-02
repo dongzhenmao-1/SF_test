@@ -1,12 +1,9 @@
-#include <stdio.h>
-#include <optional>
-
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 
 #include <zmq.hpp>
 
-#include "snake.hpp"
+#include "game/snake_game/game.hpp"
 
 sf::RenderWindow window(sf::VideoMode({640, 360}), "My window", sf::Style::Default);
 
@@ -26,7 +23,7 @@ void pre_draw() {
         for (int y = -18; y < 18; ++y) {
             int state = game.world[mtd::Point(x, y)];
             sf::RectangleShape rectangle({10, 10});
-            rectangle.setPosition({static_cast<floot>(x) * 10, static_cast<floot>(y) * 10});
+            rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
             if (state == -1) { // 空地
                 rectangle.setFillColor(sf::Color::Black); 
             } else if (state >= 0) {
