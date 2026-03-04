@@ -14,8 +14,6 @@
 #include "shared.hpp"
 
 namespace Game::Snake_game {
-    // template <int w_r = 48, int h_r = 27, int view_r = 9, int pixiv_size = 10>
-    template <int w_r, int h_r, int view_r, int pixiv_size>
     struct Server {
         static constexpr sf::Color wall_color = sf::Color::White;
         static constexpr sf::Color none_color = sf::Color::Black;
@@ -70,16 +68,16 @@ namespace Game::Snake_game {
 
     };
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    int Server<w_r, h_r, view_r, pixiv_size>::get_avl_id() const {
+
+    inline int Server::get_avl_id() const {
         for (int i = 0; i < snake_num; ++i) {
             if (!snake[i].is_alive) return i;
         }
         return -1;
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    std::vector<mtd::Point> Server<w_r, h_r, view_r, pixiv_size>::get_rd_avl_pos() {
+    
+    inline std::vector<mtd::Point> Server::get_rd_avl_pos() {
         std::set<mtd::Point> avl;
         std::vector<mtd::Point> rd_avl;
 
@@ -100,19 +98,19 @@ namespace Game::Snake_game {
         return rd_avl;
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    bool Server<w_r, h_r, view_r, pixiv_size>::out_of_world(const mtd::Point &p) {
+    
+    inline bool Server::out_of_world(const mtd::Point &p) {
         return (p.x <= -w_r || p.x >= w_r - 1 || p.y <= -h_r || p.y >= h_r - 1);
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    sf::Color Server<w_r, h_r, view_r, pixiv_size>::get_world_color(const mtd::Point &p) {
+    
+    inline sf::Color Server::get_world_color(const mtd::Point &p) {
         if (out_of_world(p)) return none_color;
         return world[p];
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    mtd::Ex_array_2D<sf::Color, view_r, view_r> Server<w_r, h_r, view_r, pixiv_size>::get_view_world(const mtd::Point &center) {
+    
+    inline mtd::Ex_array_2D<sf::Color, view_r, view_r> Server::get_view_world(const mtd::Point &center) {
         mtd::Ex_array_2D<sf::Color, view_r, view_r> view;
         for (int i = -view_r; i < view_r; ++i) {
             for (int e = -view_r; e < view_r; ++e) {
@@ -122,8 +120,8 @@ namespace Game::Snake_game {
         return view;
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::draw_to_world() {
+    
+    inline void Server::draw_to_world() {
         for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, -h_r)] = wall_color;
         for (int x = -w_r; x < w_r; ++x) world[mtd::Point(x, h_r - 1)] = wall_color;
         for (int y = -h_r; y < h_r; ++y) world[mtd::Point(-w_r, y)] = wall_color;
@@ -147,8 +145,8 @@ namespace Game::Snake_game {
         }
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::t_run() {
+    
+    inline void Server::t_run() {
         for (Snake &s : snake) if (s.is_alive) s._change_dir(); // It's necessary to split the function
 
         for (Snake &sa : snake) if (sa.is_alive) {
@@ -175,15 +173,15 @@ namespace Game::Snake_game {
         draw_to_world();
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    Server<w_r, h_r, view_r, pixiv_size>::Server() = default;
+    
+    inline Server::Server() = default;
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::draw() {
+    
+    inline void Server::draw() {
         window.clear(sf::Color::Black);
         for (int x = -w_r; x < w_r; ++x) {
             for (int y = -h_r; y < h_r; ++y) {
-                sf::RectangleShape rectangle({pixiv_size, pixiv_size});
+                sf::RectangleShape rectangle({pixel_size, pixel_size});
                 rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
                 rectangle.setFillColor(world[mtd::Point(x, y)]);
                 window.draw(rectangle);
@@ -192,27 +190,27 @@ namespace Game::Snake_game {
         window.display();
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::init_context() {
+
+    inline void Server::init_context() {
         context = zmq::context_t(1);
         router = zmq::socket_t(context, zmq::socket_type::router);
         router.bind("tcp://127.0.0.1:5555");
         printf("The game is running on port 5555.\n");
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::init_view_window() {
-        window.create(sf::VideoMode({pixiv_size * w_r * 2, pixiv_size * h_r * 2}),
+    
+    inline void Server::init_view_window() {
+        window.create(sf::VideoMode({pixel_size * w_r * 2, pixel_size * h_r * 2}),
               "My window", sf::Style::Default);
         sf::View view;
         view.setCenter({0, 0});
-        view.setSize({pixiv_size * w_r * 2, -pixiv_size * h_r * 2});
+        view.setSize({pixel_size * w_r * 2, -pixel_size * h_r * 2});
         window.setView(view);
         printf("Window created successfully!\n");
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::solve_join_case(const std::string &token) {
+    
+    inline void Server::solve_join_case(const std::string &token) {
         router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
         if (const int id = get_avl_id(); id != -1) {
             token_to_id[token] = id;
@@ -225,31 +223,28 @@ namespace Game::Snake_game {
         }
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::solve_input_case(const std::string &token) {
+    inline void Server::solve_input_case(const std::string &token) {
         zmq::message_t _msg;
         (void) router.recv(_msg, zmq::recv_flags::none);
         const int id = token_to_id[token];
         snake[id].change_dir(*static_cast<DIR*>(_msg.data()));
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::solve_quit_case(const std::string &token) {
+    inline void Server::solve_quit_case(const std::string &token) {
         const int id = token_to_id[token];
         snake[id].is_alive = false;
         token_to_id.erase(token);
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::solve_view_case(const std::string &token) {
+    
+    inline void Server::solve_view_case(const std::string &token) {
         const int id = token_to_id[token];
         router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
         mtd::Ex_array_2D<sf::Color, view_r, view_r> view = get_view_world(snake[id].v.front());
         router.send(zmq::message_t(&view, sizeof(view)), zmq::send_flags::none);
     }
 
-    template <int w_r, int h_r, int view_r, int pixiv_size>
-    void Server<w_r, h_r, view_r, pixiv_size>::run_server() {
+    inline void Server::run_server() {
         init_context();
         init_view_window();
 

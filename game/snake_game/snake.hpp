@@ -32,6 +32,7 @@ namespace Game::Snake_game {
         }
         void _change_dir() {
             if (next_dir == DIR::None) return;
+            if ((static_cast<int>(next_dir) ^ static_cast<int>(next_dir)) == 1) return;
             dir = next_dir, next_dir = DIR::None;
         }
 
