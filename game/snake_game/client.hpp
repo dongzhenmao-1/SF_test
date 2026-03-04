@@ -80,22 +80,23 @@ namespace Game::Snake_game {
 
     inline void Client::draw() {
         zmq::message_t msg;
-        (void) dealer.recv(msg, zmq::recv_flags::none);
-        const auto _it = static_cast<sf::Color*>(msg.data());
-        std::vector<sf::Color> buffer(_it, _it + view_r * view_r * 4);
-        Ob_window world;
-        decode_ob_window(buffer, world);
+        if (dealer.recv(msg, zmq::recv_flags::none)) {
+            const auto _it = static_cast<sf::Color*>(msg.data());
+            std::vector<sf::Color> buffer(_it, _it + view_r * view_r * 4);
+            Ob_window world;
+            decode_ob_window(buffer, world);
 
-        window.clear(sf::Color::Black);
-        for (int x = -view_r; x < view_r; ++x) {
-            for (int y = -view_r; y < view_r; ++y) {
-                sf::RectangleShape rectangle({pixel_size, pixel_size});
-                rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
-                rectangle.setFillColor(world[mtd::Point(x, y)]);
-                window.draw(rectangle);
+            window.clear(sf::Color::Black);
+            for (int x = -view_r; x < view_r; ++x) {
+                for (int y = -view_r; y < view_r; ++y) {
+                    sf::RectangleShape rectangle({pixel_size, pixel_size});
+                    rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
+                    rectangle.setFillColor(world[mtd::Point(x, y)]);
+                    window.draw(rectangle);
+                }
             }
+            window.display();
         }
-        window.display();
     }
 
     inline void Client::run_client() {

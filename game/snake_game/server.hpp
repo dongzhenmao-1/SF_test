@@ -113,7 +113,7 @@ namespace Game::Snake_game {
     inline void Server::get_view_world(Ob_window &view, const mtd::Point center) {
         for (int i = -view_r; i < view_r; ++i) {
             for (int e = -view_r; e < view_r; ++e) {
-                view[center + mtd::Point(i, e)] = get_world_color(center + mtd::Point(i, e));
+                view[mtd::Point(i, e)] = get_world_color(center + mtd::Point(i, e));
             }
         }
     }
@@ -149,7 +149,7 @@ namespace Game::Snake_game {
 
         for (Snake &sa : snake) if (sa.is_alive) {
             mtd::Point head = sa.next_head_pos();
-            for (const Snake &sb : snake) if (sb.is_alive) {
+            for (const Snake &sb : snake) if (sb.is_alive && sb.token != sa.token) {
                 Snake _sb = sb; _sb.t_run(); // To prevent this snake's head from hitting the heads of other snakes.
                 for (mtd::Point p : _sb.v) if (head == p) sa.hit();
             }
@@ -243,10 +243,8 @@ namespace Game::Snake_game {
         router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
         mtd::Ex_array_2D<sf::Color, view_r, view_r> view;
         get_view_world(view, snake[id].v.front());
-        printf("get_view_world\n");
         std::vector<sf::Color> buffer;
         encode_ob_window(view, buffer);
-        printf("encode_ob_window\n");
         router.send(zmq::message_t(buffer.data(), buffer.size() * sizeof(sf::Color)), zmq::send_flags::none);
     }
 
@@ -275,16 +273,11 @@ namespace Game::Snake_game {
             }
 
             t_run();
-            printf("t_run\n");
             draw();
-            printf("draw\n");
 
             for (const auto &[first, second] : token_to_id) {
-                printf("to %d\n", second);
                 solve_view_case(first);
-                printf("ed %d\n")
             }
-            printf("view\n");
 
             sf::sleep(tick - c.getElapsedTime());
         }

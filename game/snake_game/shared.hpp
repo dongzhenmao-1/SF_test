@@ -28,6 +28,7 @@ namespace Game::Snake_game {
         View,
         Quit,
         Kick,
+        DIE,
     };
 
     typedef mtd::Ex_array_2D<sf::Color, 9, 9> Ob_window; // Observation window
@@ -36,8 +37,8 @@ namespace Game::Snake_game {
 
     inline void encode_ob_window(Ob_window &a, std::vector<sf::Color> &buffer) {
         buffer.clear();
-        for (int i = 0; i < 9; i++) {
-            for (int e = 0; e < 9; e++) {
+        for (int i = -view_r; i < view_r; i++) {
+            for (int e = -view_r; e < view_r; e++) {
                 buffer.push_back(a[mtd::Point(i, e)]);
             }
         }
@@ -45,8 +46,8 @@ namespace Game::Snake_game {
 
     inline void decode_ob_window(std::vector<sf::Color> &buffer, Ob_window &a) {
         auto it = buffer.begin();
-        for (int i = 0; i < 9; i++) {
-            for (int e = 0; e < 9; e++) {
+        for (int i = -view_r; i < view_r; i++) {
+            for (int e = -view_r; e < view_r; e++) {
                 a[mtd::Point(i, e)] = *(it++);
             }
         }

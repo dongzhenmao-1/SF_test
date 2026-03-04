@@ -25,14 +25,14 @@ namespace Game::Snake_game {
 
         mtd::Point next_head_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
 
-        bool t_run();
+        void t_run();
         void change_dir(const DIR _dir) { // External Interface
             if (_dir == DIR::None) return;
             next_dir = _dir;
         }
         void _change_dir() {
             if (next_dir == DIR::None) return;
-            if ((static_cast<int>(next_dir) ^ static_cast<int>(next_dir)) == 1) return;
+            if ((static_cast<int>(next_dir) ^ static_cast<int>(dir)) == 1) return;
             dir = next_dir, next_dir = DIR::None;
         }
 
@@ -43,7 +43,7 @@ namespace Game::Snake_game {
 
     };
 
-    inline bool Snake::t_run() {
+    inline void Snake::t_run() {
         mtd::Point pre = v[0];
         v[0] = next_head_pos();
         for (int i = 1; i < v.size(); ++i) {
@@ -51,7 +51,7 @@ namespace Game::Snake_game {
         }
         if (I > 0) --I, v.push_back(pre);
         if (D > 0) --D, v.erase(v.begin());
-        return !v.empty();
+        if (v.empty()) is_alive = false;
     }
 
 
