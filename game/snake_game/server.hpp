@@ -92,9 +92,7 @@ namespace Game::Snake_game {
         for (Snake &s : snake) {
             for (mtd::Point p : s.v) avl.erase(p);
         }
-        for (const Food f : food) {
-            avl.erase(f.pos);
-        }
+        for (const Food f : food) avl.erase(f.pos);
 
         for (const mtd::Point p : avl) rd_avl.push_back(p);
         mtd::shuffle(rd_avl.begin(), rd_avl.end());
@@ -219,10 +217,10 @@ namespace Game::Snake_game {
         if (const int id = get_avl_id(); id != -1) {
             token_to_id[token] = id;
             snake[id] = Snake(get_rd_avl_pos().back(), token);
-            Message_type head = Message_type::Accept;
+            Msg_type head = Msg_type::Accept;
             router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
         } else {
-            Message_type head = Message_type::Reject;
+            Msg_type head = Msg_type::Reject;
             router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
         }
     }
@@ -269,10 +267,10 @@ namespace Game::Snake_game {
             while (router.recv(_msg, zmq::recv_flags::dontwait)) {
                 std::string token = _msg.to_string();
                 (void) router.recv(_msg, zmq::recv_flags::none);
-                const Message_type head = *static_cast<Message_type*>(_msg.data());
-                if (head == Message_type::Join) solve_join_case(token);
-                else if (head == Message_type::Input) solve_input_case(token);
-                else if (head == Message_type::Quit) solve_quit_case(token);
+                const Msg_type head = *static_cast<Msg_type*>(_msg.data());
+                if (head == Msg_type::Join) solve_join_case(token);
+                else if (head == Msg_type::Input) solve_input_case(token);
+                else if (head == Msg_type::Quit) solve_quit_case(token);
             }
 
             t_run();

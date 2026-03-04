@@ -17,7 +17,7 @@ namespace Game::Snake_game {
         mtd::Point(0, 1),
     };
 
-    enum class Message_type {
+    enum class Msg_type {
         Join,
         Accept,
         Reject,
@@ -25,10 +25,6 @@ namespace Game::Snake_game {
         View,
         Quit,
         Kick,
-    };
-
-    struct Message_head {
-
     };
 
 }

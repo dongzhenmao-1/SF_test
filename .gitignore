@@ -1,4 +1,4 @@
 *.exe
 build/
-cmake-build-debug/
+cmake-build-default/
 .idea/

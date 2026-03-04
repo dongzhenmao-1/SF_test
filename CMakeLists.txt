@@ -4,7 +4,7 @@ set(CMAKE_TLS_VERIFY OFF)
 
 # set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(server VERSION 1.0)
+project(test VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,8 +18,18 @@ find_package(cppzmq REQUIRED)
 find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System Network Audio)
 
 add_executable(server server.cpp)
+add_executable(client client.cpp)
 
 target_link_libraries(server PRIVATE
+        cppzmq
+        SFML::Graphics
+        SFML::Audio
+        SFML::Window
+        SFML::System
+        SFML::Network
+)
+
+target_link_libraries(client PRIVATE
         cppzmq
         SFML::Graphics
         SFML::Audio
