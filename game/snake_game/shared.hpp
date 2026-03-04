@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../my_algorithm/my_algorithm.hpp"
+#include <SFML/Graphics.hpp>
 
 namespace Game::Snake_game {
 
@@ -34,10 +35,10 @@ namespace Game::Snake_game {
     constexpr int w_r = 47, h_r = 27, view_r = 9, pixel_size = 10;
 
     inline void encode_ob_window(Ob_window &a, std::vector<sf::Color> &buffer) {
-        auto it = buffer.begin();
+        buffer.clear();
         for (int i = 0; i < 9; i++) {
             for (int e = 0; e < 9; e++) {
-                *(it++) = a[mtd::Point(i, e)];
+                buffer.push_back(a[mtd::Point(i, e)]);
             }
         }
     }

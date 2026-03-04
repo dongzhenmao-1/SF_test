@@ -47,7 +47,7 @@ namespace Game::Snake_game {
         sf::Color get_world_color(const mtd::Point&);
 
         typedef mtd::Ex_array_2D<sf::Color, view_r, view_r> View_window;
-        mtd::Ex_array_2D<sf::Color, view_r, view_r> get_view_world(const mtd::Point&);
+        void get_view_world(Ob_window &view, mtd::Point center);
 
         void draw_to_world();
         void t_run();
@@ -110,14 +110,12 @@ namespace Game::Snake_game {
     }
 
     
-    inline mtd::Ex_array_2D<sf::Color, view_r, view_r> Server::get_view_world(const mtd::Point &center) {
-        mtd::Ex_array_2D<sf::Color, view_r, view_r> view;
+    inline void Server::get_view_world(Ob_window &view, const mtd::Point center) {
         for (int i = -view_r; i < view_r; ++i) {
             for (int e = -view_r; e < view_r; ++e) {
                 view[center + mtd::Point(i, e)] = get_world_color(center + mtd::Point(i, e));
             }
         }
-        return view;
     }
 
     
@@ -217,9 +215,11 @@ namespace Game::Snake_game {
             snake[id] = Snake(get_rd_avl_pos().back(), token);
             Msg_type head = Msg_type::Accept;
             router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
+            printf("The player %d joins the game\n", id);
         } else {
             Msg_type head = Msg_type::Reject;
             router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
+            printf("A player wants to join the game, but the server is full\n");
         }
     }
 
@@ -234,14 +234,20 @@ namespace Game::Snake_game {
         const int id = token_to_id[token];
         snake[id].is_alive = false;
         token_to_id.erase(token);
+        printf("The player %d quits the game\n", id);
     }
 
     
     inline void Server::solve_view_case(const std::string &token) {
         const int id = token_to_id[token];
         router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
-        mtd::Ex_array_2D<sf::Color, view_r, view_r> view = get_view_world(snake[id].v.front());
-        router.send(zmq::message_t(&view, sizeof(view)), zmq::send_flags::none);
+        mtd::Ex_array_2D<sf::Color, view_r, view_r> view;
+        get_view_world(view, snake[id].v.front());
+        printf("get_view_world\n");
+        std::vector<sf::Color> buffer;
+        encode_ob_window(view, buffer);
+        printf("encode_ob_window\n");
+        router.send(zmq::message_t(buffer.data(), buffer.size() * sizeof(sf::Color)), zmq::send_flags::none);
     }
 
     inline void Server::run_server() {
@@ -269,11 +275,16 @@ namespace Game::Snake_game {
             }
 
             t_run();
+            printf("t_run\n");
             draw();
+            printf("draw\n");
 
             for (const auto &[first, second] : token_to_id) {
+                printf("to %d\n", second);
                 solve_view_case(first);
+                printf("ed %d\n")
             }
+            printf("view\n");
 
             sf::sleep(tick - c.getElapsedTime());
         }

@@ -27,7 +27,6 @@ namespace Game::Snake_game {
         void run_client();
     };
 
-    
     inline bool Client::init_context() {
         context = zmq::context_t(1);
         dealer = zmq::socket_t(context, zmq::socket_type::dealer);
@@ -49,7 +48,6 @@ namespace Game::Snake_game {
         }
     }
 
-    
     inline void Client::init_view_window() {
         window.create(sf::VideoMode({pixel_size * view_r * 2, pixel_size * view_r * 2}),
               "My window", sf::Style::Default);
@@ -60,7 +58,6 @@ namespace Game::Snake_game {
         printf("Window created successfully!\n");
     }
 
-    
     inline void Client::handle_input() {
         auto send_dir = [this](DIR dir) -> void {
             Msg_type head = Msg_type::Input;
@@ -81,11 +78,13 @@ namespace Game::Snake_game {
         send_dir(final_dir);
     }
 
-    
     inline void Client::draw() {
         zmq::message_t msg;
         (void) dealer.recv(msg, zmq::recv_flags::none);
-        auto world = *static_cast<mtd::Ex_array_2D<sf::Color, view_r, view_r>*>(msg.data());
+        const auto _it = static_cast<sf::Color*>(msg.data());
+        std::vector<sf::Color> buffer(_it, _it + view_r * view_r * 4);
+        Ob_window world;
+        decode_ob_window(buffer, world);
 
         window.clear(sf::Color::Black);
         for (int x = -view_r; x < view_r; ++x) {
