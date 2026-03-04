@@ -53,4 +53,6 @@ namespace Game::Snake_game {
         }
     }
 
+    constexpr sf::Time tick(sf::seconds(0.2));
+
 }

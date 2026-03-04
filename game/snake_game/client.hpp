@@ -102,9 +102,17 @@ namespace Game::Snake_game {
     inline void Client::run_client() {
         if (!init_context()) return;
         init_view_window();
+
+        Msg_type head = Msg_type::Input;
+        DIR initial_dir = DIR::None;
+        dealer.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::sndmore);
+        dealer.send(zmq::message_t(&initial_dir, sizeof(initial_dir)), zmq::send_flags::none);
+
         while (window.isOpen()) {
-            handle_input();
+            sf::Clock c;
             draw();
+            sf::sleep((tick - c.getElapsedTime()) - sf::seconds(0.05));
+            handle_input();
         }
     }
 

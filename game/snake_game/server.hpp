@@ -252,10 +252,7 @@ namespace Game::Snake_game {
         init_context();
         init_view_window();
 
-        // int T = 0;
-        constexpr sf::Time tick(sf::seconds(0.2));
         while (window.isOpen()) {
-            // printf("%d\n", T++);
             while (const std::optional event = window.pollEvent()) {
                 if (event == std::nullopt) continue;
                 if (event->is<sf::Event::Closed>()) window.close();
