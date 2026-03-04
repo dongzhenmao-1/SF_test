@@ -53,6 +53,10 @@ namespace Game::Snake_game {
         void t_run();
         void draw();
 
+        int now_player() {
+
+        }
+
         std::map<std::string, int> token_to_id;
 
         void init_context();
