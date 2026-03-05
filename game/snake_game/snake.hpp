@@ -15,13 +15,13 @@ namespace Game::Snake_game {
         DIR dir, next_dir;
         int I; // Length to be added
         int D; // Length to be reduced
-        int is_alive;
+        int is_alive, is_online;
         std::string token;
 
         Snake(const mtd::Point p, std::string _token) : v({p}), dir(static_cast<DIR>(0)),
-            next_dir(static_cast<DIR>(-1)), I(2), D(0), is_alive(true), token(std::move(_token)) {
+            next_dir(static_cast<DIR>(-1)), I(2), D(0), is_alive(true), is_online(true), token(std::move(_token)) {
         }
-        Snake() : is_alive(false) {}
+        Snake() : is_alive(false), is_online(false) {}
 
         mtd::Point next_head_pos() { return v[0] + point_dir[static_cast<int>(dir)]; }
 

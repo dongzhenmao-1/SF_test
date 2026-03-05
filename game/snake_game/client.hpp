@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <string>
+#include <chrono>
+#include <iostream>
+#include <ctime>
 
 #include <zmq.hpp>
 #include <SFML/Graphics.hpp>
@@ -75,44 +78,57 @@ namespace Game::Snake_game {
                 else if (key->code == sf::Keyboard::Key::Up) final_dir = DIR::Up;
             }
         }
-        send_dir(final_dir);
+
+        if (final_dir != DIR::None) {
+            send_dir(final_dir);
+            printf("%lld: send dir(%d) to server\n", mytime(), static_cast<int>(final_dir));
+        }
     }
 
     inline void Client::draw() {
         zmq::message_t msg;
-        if (dealer.recv(msg, zmq::recv_flags::none)) {
-            const auto _it = static_cast<sf::Color*>(msg.data());
-            std::vector<sf::Color> buffer(_it, _it + view_r * view_r * 4);
-            Ob_window world;
-            decode_ob_window(buffer, world);
+        (void) dealer.recv(msg, zmq::recv_flags::none);
+        const auto _it = static_cast<sf::Color*>(msg.data());
+        std::vector<sf::Color> buffer(_it, _it + view_r * view_r * 4);
+        Ob_window world;
+        decode_ob_window(buffer, world);
 
-            window.clear(sf::Color::Black);
-            for (int x = -view_r; x < view_r; ++x) {
-                for (int y = -view_r; y < view_r; ++y) {
-                    sf::RectangleShape rectangle({pixel_size, pixel_size});
-                    rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
-                    rectangle.setFillColor(world[mtd::Point(x, y)]);
-                    window.draw(rectangle);
-                }
+        window.clear(sf::Color::Black);
+        for (int x = -view_r; x < view_r; ++x) {
+            for (int y = -view_r; y < view_r; ++y) {
+                sf::RectangleShape rectangle({pixel_size, pixel_size});
+                rectangle.setPosition({static_cast<float>(x) * pixel_size, static_cast<float>(y) * pixel_size});
+                rectangle.setFillColor(world[mtd::Point(x, y)]);
+                window.draw(rectangle);
             }
-            window.display();
         }
+        window.display();
     }
 
     inline void Client::run_client() {
         if (!init_context()) return;
         init_view_window();
 
-        Msg_type head = Msg_type::Input;
-        DIR initial_dir = DIR::None;
-        dealer.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::sndmore);
-        dealer.send(zmq::message_t(&initial_dir, sizeof(initial_dir)), zmq::send_flags::none);
-
         while (window.isOpen()) {
+            zmq::message_t msg;
+            while (dealer.recv(msg, zmq::recv_flags::none)) { // wait for flag
+                Msg_type head = *static_cast<Msg_type*>(msg.data());
+                if (head == Msg_type::Flag) break;
+            }
+
+            sf::sleep(sf::seconds(0.02));
+            while (dealer.recv(msg, zmq::recv_flags::dontwait)) {
+                Msg_type head = *static_cast<Msg_type*>(msg.data());
+                if (head == Msg_type::Die) window.close();
+                else if (head == Msg_type::View) draw();
+            }
+
+            printf("%lld: receive the view from server\n", mytime());
             sf::Clock c;
-            draw();
             sf::sleep((tick - c.getElapsedTime()) - sf::seconds(0.05));
             handle_input();
+
+            printf("\n");
         }
     }
 

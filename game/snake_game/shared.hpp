@@ -21,6 +21,7 @@ namespace Game::Snake_game {
     };
 
     enum class Msg_type {
+        Flag, // The start symbol for a message sent from the server to the client.
         Join,
         Accept,
         Reject,
@@ -28,12 +29,14 @@ namespace Game::Snake_game {
         View,
         Quit,
         Kick,
-        DIE,
+        Die,
+        Hit,
+        Eat,
     };
 
-    typedef mtd::Ex_array_2D<sf::Color, 9, 9> Ob_window; // Observation window
+    constexpr int w_r = 96, h_r = 54, view_r = 30, pixel_size = 4;
 
-    constexpr int w_r = 47, h_r = 27, view_r = 9, pixel_size = 10;
+    typedef mtd::Ex_array_2D<sf::Color, view_r, view_r> Ob_window; // Observation window
 
     inline void encode_ob_window(Ob_window &a, std::vector<sf::Color> &buffer) {
         buffer.clear();
@@ -54,5 +57,11 @@ namespace Game::Snake_game {
     }
 
     constexpr sf::Time tick(sf::seconds(0.2));
+
+    inline long long mytime() {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count() % 60000;
+    }
 
 }

@@ -13,6 +13,7 @@
 #include "food.hpp"
 #include "shared.hpp"
 
+
 namespace Game::Snake_game {
     struct Server {
         static constexpr sf::Color wall_color = sf::Color::White;
@@ -25,7 +26,7 @@ namespace Game::Snake_game {
             sf::Color::Yellow,
         };
 
-        static constexpr int food_num = 5;
+        static constexpr int food_num = 20;
         static constexpr int snake_num = 3;
 
         std::array<Snake, snake_num> snake;
@@ -38,12 +39,19 @@ namespace Game::Snake_game {
 
         Server();
 
+        void send_token(const std::string &token);
+
+        void send_head(const Msg_type &head, const zmq::send_flags &flag);
+
         int get_avl_id() const;
         std::vector<mtd::Point> get_rd_avl_pos();
 
         mtd::Ex_array_2D<sf::Color, w_r, h_r> world;
 
         static bool out_of_world(const mtd::Point&);
+
+        static bool is_in_wall(const mtd::Point &p);
+
         sf::Color get_world_color(const mtd::Point&);
 
         typedef mtd::Ex_array_2D<sf::Color, view_r, view_r> View_window;
@@ -52,10 +60,6 @@ namespace Game::Snake_game {
         void draw_to_world();
         void t_run();
         void draw();
-
-        int now_player() {
-
-        }
 
         std::map<std::string, int> token_to_id;
 
@@ -66,11 +70,21 @@ namespace Game::Snake_game {
         void solve_input_case(const std::string &token);
         void solve_quit_case(const std::string &token);
 
+        void solve_die_case(const std::string &token);
+
         void solve_view_case(const std::string &token);
 
         void run_server();
 
     };
+
+    inline void Server::send_token(const std::string &token) {
+        router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
+    }
+
+    inline void Server::send_head(const Msg_type &head, const zmq::send_flags &flag) {
+        router.send(zmq::message_t(&head, sizeof(head)), flag);
+    }
 
 
     inline int Server::get_avl_id() const {
@@ -104,7 +118,11 @@ namespace Game::Snake_game {
 
     
     inline bool Server::out_of_world(const mtd::Point &p) {
-        return (p.x <= -w_r || p.x >= w_r - 1 || p.y <= -h_r || p.y >= h_r - 1);
+        return (p.x < -w_r || p.x > w_r - 1 || p.y < -h_r || p.y > h_r - 1);
+    }
+
+    inline bool Server::is_in_wall(const mtd::Point &p) {
+        return (p.x == -w_r || p.x == w_r - 1 || p.y == -h_r || p.y == h_r - 1);
     }
 
     
@@ -157,9 +175,14 @@ namespace Game::Snake_game {
                 Snake _sb = sb; _sb.t_run(); // To prevent this snake's head from hitting the heads of other snakes.
                 for (mtd::Point p : _sb.v) if (head == p) sa.hit();
             }
-            if (out_of_world(head)) sa.hit();
-
+            if (is_in_wall(head)) {
+                send_token(sa.token);
+                send_head(Msg_type::Hit, zmq::send_flags::none);
+                sa.hit();
+            }
             for (Food &f : food) if (f.is_alive && head == f.pos) {
+                send_token(sa.token);
+                send_head(Msg_type::Eat, zmq::send_flags::none);
                 sa.eat(f);
             }
         }
@@ -184,7 +207,7 @@ namespace Game::Snake_game {
         for (int x = -w_r; x < w_r; ++x) {
             for (int y = -h_r; y < h_r; ++y) {
                 sf::RectangleShape rectangle({pixel_size, pixel_size});
-                rectangle.setPosition({static_cast<float>(x) * 10, static_cast<float>(y) * 10});
+                rectangle.setPosition({static_cast<float>(x) * pixel_size, static_cast<float>(y) * pixel_size});
                 rectangle.setFillColor(world[mtd::Point(x, y)]);
                 window.draw(rectangle);
             }
@@ -213,16 +236,14 @@ namespace Game::Snake_game {
 
     
     inline void Server::solve_join_case(const std::string &token) {
-        router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
+        send_token(token);
         if (const int id = get_avl_id(); id != -1) {
             token_to_id[token] = id;
             snake[id] = Snake(get_rd_avl_pos().back(), token);
-            Msg_type head = Msg_type::Accept;
-            router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
+            send_head(Msg_type::Accept, zmq::send_flags::none);
             printf("The player %d joins the game\n", id);
         } else {
-            Msg_type head = Msg_type::Reject;
-            router.send(zmq::message_t(&head, sizeof(head)), zmq::send_flags::none);
+            send_head(Msg_type::Reject, zmq::send_flags::none);
             printf("A player wants to join the game, but the server is full\n");
         }
     }
@@ -236,20 +257,32 @@ namespace Game::Snake_game {
 
     inline void Server::solve_quit_case(const std::string &token) {
         const int id = token_to_id[token];
-        snake[id].is_alive = false;
+        snake[id].is_alive = snake[id].is_online = false;
         token_to_id.erase(token);
         printf("The player %d quits the game\n", id);
     }
 
-    
+    inline void Server::solve_die_case(const std::string &token) {
+        const int id = token_to_id[token];
+        snake[id].is_online = false;
+        token_to_id.erase(token);
+
+        send_token(token);
+        send_head(Msg_type::Die, zmq::send_flags::none);
+        printf("The player %d died\n", id);
+    }
+
     inline void Server::solve_view_case(const std::string &token) {
         const int id = token_to_id[token];
-        router.send(zmq::message_t(token.data(), token.size()), zmq::send_flags::sndmore);
+        send_token(token);
+        send_head(Msg_type::View, zmq::send_flags::sndmore);
+
         mtd::Ex_array_2D<sf::Color, view_r, view_r> view;
         get_view_world(view, snake[id].v.front());
         std::vector<sf::Color> buffer;
         encode_ob_window(view, buffer);
         router.send(zmq::message_t(buffer.data(), buffer.size() * sizeof(sf::Color)), zmq::send_flags::none);
+
     }
 
     inline void Server::run_server() {
@@ -269,16 +302,27 @@ namespace Game::Snake_game {
                 (void) router.recv(_msg, zmq::recv_flags::none);
                 const Msg_type head = *static_cast<Msg_type*>(_msg.data());
                 if (head == Msg_type::Join) solve_join_case(token);
-                else if (head == Msg_type::Input) solve_input_case(token);
+                else if (head == Msg_type::Input) solve_input_case(token), printf("%lld: receive the input from client\n", mytime());
                 else if (head == Msg_type::Quit) solve_quit_case(token);
             }
 
             t_run();
+
+            for (const auto &[token, second] : token_to_id) {
+                send_token(token);
+                send_head(Msg_type::Flag, zmq::send_flags::none);
+            }
+
+            for (Snake &s : snake) if (s.is_online) {
+                if (!s.is_alive) solve_die_case(s.token);
+            }
+
             draw();
 
             for (const auto &[first, second] : token_to_id) {
                 solve_view_case(first);
             }
+            printf("\n");
 
             sf::sleep(tick - c.getElapsedTime());
         }

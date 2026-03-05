@@ -6,7 +6,7 @@ set(CMAKE_TLS_VERIFY OFF)
 
 project(test VERSION 1.0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SFML_DIR E:/External_library/SFML_DY/lib/cmake/SFML)
